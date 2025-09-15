@@ -80,14 +80,77 @@ app.post("/convert", upload.single("video"), (req, res) => {
             console.error("Download error:", err);
             res.status(500).json({ error: "Failed to download file" });
           }
-          // 임시 파일 정리
-          if (fs.existsSync(input)) {
-            fs.unlinkSync(input);
+
+          // 모든 임시 파일 정리
+          try {
+            // 업로드 파일 삭제
+            if (fs.existsSync(input)) {
+              fs.unlinkSync(input);
+              console.log("업로드 파일 삭제 완료:", input);
+            }
+
+            // 변환된 GIF 파일 삭제
+            if (fs.existsSync(output)) {
+              fs.unlinkSync(output);
+              console.log("변환된 GIF 파일 삭제 완료:", output);
+            }
+
+            // gifs 디렉토리 비우기
+            const gifFiles = fs.readdirSync("gifs");
+            gifFiles.forEach((file) => {
+              const filePath = path.join("gifs", file);
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log("기존 GIF 파일 삭제:", filePath);
+              }
+            });
+
+            // uploads 디렉토리 비우기
+            const uploadFiles = fs.readdirSync("uploads");
+            uploadFiles.forEach((file) => {
+              const filePath = path.join("uploads", file);
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log("기존 업로드 파일 삭제:", filePath);
+              }
+            });
+          } catch (cleanupErr) {
+            console.error("파일 정리 중 오류:", cleanupErr);
           }
         });
       } else {
         console.error("출력 파일이 생성되지 않음:", output);
         res.status(500).json({ error: "Output file was not created" });
+
+        // 실패 시에도 디렉토리 정리
+        try {
+          if (fs.existsSync(input)) {
+            fs.unlinkSync(input);
+            console.log("실패 시 업로드 파일 삭제:", input);
+          }
+
+          // gifs 디렉토리 비우기
+          const gifFiles = fs.readdirSync("gifs");
+          gifFiles.forEach((file) => {
+            const filePath = path.join("gifs", file);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log("실패 시 기존 GIF 파일 삭제:", filePath);
+            }
+          });
+
+          // uploads 디렉토리 비우기
+          const uploadFiles = fs.readdirSync("uploads");
+          uploadFiles.forEach((file) => {
+            const filePath = path.join("uploads", file);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log("실패 시 기존 업로드 파일 삭제:", filePath);
+            }
+          });
+        } catch (cleanupErr) {
+          console.error("실패 시 파일 정리 중 오류:", cleanupErr);
+        }
       }
     })
     .on("error", (err, stdout, stderr) => {
@@ -97,9 +160,35 @@ app.post("/convert", upload.single("video"), (req, res) => {
       res
         .status(500)
         .json({ error: "Video conversion failed", details: stderr });
-      // 임시 파일 정리
-      if (fs.existsSync(input)) {
-        fs.unlinkSync(input);
+
+      // 에러 시에도 디렉토리 정리
+      try {
+        if (fs.existsSync(input)) {
+          fs.unlinkSync(input);
+          console.log("에러 시 업로드 파일 삭제:", input);
+        }
+
+        // gifs 디렉토리 비우기
+        const gifFiles = fs.readdirSync("gifs");
+        gifFiles.forEach((file) => {
+          const filePath = path.join("gifs", file);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log("에러 시 기존 GIF 파일 삭제:", filePath);
+          }
+        });
+
+        // uploads 디렉토리 비우기
+        const uploadFiles = fs.readdirSync("uploads");
+        uploadFiles.forEach((file) => {
+          const filePath = path.join("uploads", file);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log("에러 시 기존 업로드 파일 삭제:", filePath);
+          }
+        });
+      } catch (cleanupErr) {
+        console.error("에러 시 파일 정리 중 오류:", cleanupErr);
       }
     });
 });
